@@ -1,13 +1,12 @@
 <?php
 
-class Input
+class Input extends Factory
 {
   const SELECT    = 'select';
   const TEXT      = 'text';
   const CHECKBOX  = 'checkbox';
   const RADIO     = 'radio';
-
-  static $instancebin;
+  const NONE      = 'none';
 
   public $value = null;
 
@@ -32,7 +31,11 @@ class Input
       $this->$assignable = $options[$assignable];
 
     if ( ! isset($options['label']))
-      $this->label = static::forHumans($options['name']);
+      $this->label = NameRater::forHumans($options['name']);
+
+    if (isset($options['default'])) {
+      $this->value = $options['default'];
+    }
 
     if (isset($options['ensure'])) {
       $head = $chain = $next = null;
@@ -79,17 +82,6 @@ class Input
     return $this->value = $value;
   }
 
-  static function forHumans($str)
-  {
-    $words = [];
-
-    foreach (explode('-', $str) as $word) {
-      $words[] = ucfirst($word);
-    }
-
-    return implode(' ', $words);
-  }
-
   static function __callStatic($name, $arguments)
   {
     switch ($name) {
@@ -107,32 +99,9 @@ class Input
         $instance->ensure('in options', $instance->options);
         return $instance;
         break;
+      case 'none':
+        return static::make(array_merge($arguments[0], ['type' => static::NONE]));
+        break;
     }
-  }
-
-  static function get($name)
-  {
-    return static::$instancebin[$name];
-  }
-
-  static function make($options)
-  {
-    $me = get_called_class();
-    return static::$instancebin[$options['name']] = new $me($options);
-  }
-
-  static function like($similar, $options)
-  {
-    $instance = static::get($similar);
-    if ($instance)
-      $clone = clone $instance;
-    else
-      return -1;
-
-    foreach ($options as $property => $value) {
-      $clone->$property = $value;
-    }
-
-    return static::$instancebin[$options['name']] = $clone;
   }
 }
